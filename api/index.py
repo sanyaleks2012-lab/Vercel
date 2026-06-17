@@ -44,13 +44,25 @@ def forward_to_admin(message):
     if ADMIN_ID == 0:
         bot.reply_to(message, f"ADMIN_ID не настроен. Твой ID: {message.chat.id}")
         return
-    report = f"Имя: {message.from_user.first_name}\nАйди: {message.chat.id}\nСообщение: *{message.text}*"
+    
+    # Безопасно экранируем спецсимволы, чтобы ники с "_" или "<" ничего не ломали
+    from telebot.util import smart_html_escape
+    safe_name = smart_html_escape(message.from_user.first_name)
+    safe_text = smart_html_escape(message.text)
+
+    # Переписываем шаблон под HTML
+    report = (
+        f"Имя: {safe_name}\n"
+        f"Айди: {message.chat.id}\n"
+        f"Сообщение: <b>{safe_text}</b>"
+    )
     try:
-        bot.send_message(ADMIN_ID, report, parse_mode='Markdown')
+        # Меняем parse_mode на 'HTML'
+        bot.send_message(ADMIN_ID, report, parse_mode='HTML')
         bot.reply_to(message, "Твое сообщение отправлено создателю!")
     except Exception as e:
-        bot.reply_to(message, f"Ошибка: {str(e)}")
-
+        bot.reply_to(message, f"Ошибка при отправке админу: {str(e)}")
+        
 @bot.message_handler(commands=['id'])
 def reply_to_user(message):
     if ADMIN_ID != 0 and message.chat.id != ADMIN_ID:
