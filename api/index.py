@@ -3,7 +3,7 @@ from flask import Flask, request
 
 TOKEN = "8912150974:AAHif-lx9AY2abGmo836xFz0TWHQCmTu_7Y"
 # Вшил твой ID со скриншота, теперь ты официально админ для бота
-ADMIN_ID = 5576359465  
+ADMIN_ID = 5576359465
 
 bot = telebot.TeleBot(TOKEN, threaded=False)
 app = Flask(__name__)
@@ -34,8 +34,25 @@ def send_bio(message):
 
 @bot.message_handler(commands=['message'])
 def start_message(message):
-    user_states[message.chat.id] = 'waiting_for_text'
-    bot.reply_to(message, "Напиши своё сообщение для создателя:")
+    # Вместо словаря регистрируем функцию, которая ДОЛЖНА обработать следующее сообщение
+    msg = bot.reply_to(message, "Напиши своё сообщение для создателя:")
+    bot.register_next_step_handler(msg, forward_to_admin)
+
+def forward_to_admin(message):
+    from telebot.util import smart_html_escape
+    safe_name = smart_html_escape(message.from_user.first_name)
+    safe_text = smart_html_escape(message.text)
+
+    report = (
+        f"Имя: {safe_name}\n"
+        f"Айди: {message.chat.id}\n"
+        f"Сообщение: <b>{safe_text}</b>"
+    )
+    try:
+        bot.send_message(ADMIN_ID, report, parse_mode='HTML')
+        bot.reply_to(message, "Твое сообщение отправлено создателю!")
+    except Exception as e:
+        bot.reply_to(message, f"Ошибка при отправке админу: {str(e)}")
 
 @bot.message_handler(func=lambda msg: user_states.get(msg.chat.id) == 'waiting_for_text')
 def forward_to_admin(message):
