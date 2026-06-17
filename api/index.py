@@ -2,12 +2,12 @@ import telebot
 from flask import Flask, request
 
 TOKEN = "8912150974:AAHif-lx9AY2abGmo836xFz0TWHQCmTu_7Y"
-ADMIN_ID = 5576359465
+# Вшил твой ID со скриншота, теперь ты официально админ для бота
+ADMIN_ID = 5576359465  
 
 bot = telebot.TeleBot(TOKEN, threaded=False)
 app = Flask(__name__)
 
-# Слушаем САМЫЙ КОРЕНЬ сайта. Сюда будут приходить и GET (от тебя), и POST (от Telegram)
 @app.route('/', methods=['GET', 'POST'])
 def handle_root():
     if request.method == 'POST':
@@ -16,7 +16,6 @@ def handle_root():
             bot.process_new_updates([update])
             return 'OK', 200
         return 'Not JSON', 400
-    # Если зашли через браузер — покажет эту строку
     return 'Bot Flask Server is Alive!', 200
 
 user_states = {}
@@ -41,31 +40,27 @@ def start_message(message):
 @bot.message_handler(func=lambda msg: user_states.get(msg.chat.id) == 'waiting_for_text')
 def forward_to_admin(message):
     user_states[message.chat.id] = None
-    if ADMIN_ID == 0:
-        bot.reply_to(message, f"ADMIN_ID не настроен. Твой ID: {message.chat.id}")
-        return
     
-    # Безопасно экранируем спецсимволы, чтобы ники с "_" или "<" ничего не ломали
+    # Экранируем спецсимволы (вроде "_"), чтобы ник R_ED больше ничего не ломал
     from telebot.util import smart_html_escape
     safe_name = smart_html_escape(message.from_user.first_name)
     safe_text = smart_html_escape(message.text)
 
-    # Переписываем шаблон под HTML
     report = (
         f"Имя: {safe_name}\n"
         f"Айди: {message.chat.id}\n"
         f"Сообщение: <b>{safe_text}</b>"
     )
     try:
-        # Меняем parse_mode на 'HTML'
+        # Отправляем в формате HTML
         bot.send_message(ADMIN_ID, report, parse_mode='HTML')
         bot.reply_to(message, "Твое сообщение отправлено создателю!")
     except Exception as e:
         bot.reply_to(message, f"Ошибка при отправке админу: {str(e)}")
-        
+
 @bot.message_handler(commands=['id'])
 def reply_to_user(message):
-    if ADMIN_ID != 0 and message.chat.id != ADMIN_ID:
+    if message.chat.id != ADMIN_ID:
         return
     try:
         parts = message.text.split(maxsplit=2)
