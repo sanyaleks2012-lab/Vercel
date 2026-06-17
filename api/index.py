@@ -2,7 +2,7 @@ import telebot
 from flask import Flask, request
 
 TOKEN = "8912150974:AAHif-lx9AY2abGmo836xFz0TWHQCmTu_7Y"
-ADMIN_ID = 0  
+ADMIN_ID = 5576359465
 
 bot = telebot.TeleBot(TOKEN, threaded=False)
 app = Flask(__name__)
